@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import PhotosUI
 
 struct AddItemView: View {
     @Environment(\.modelContext) private var modelContext
@@ -15,18 +14,11 @@ struct AddItemView: View {
     @State private var soldDate = Date()
     @State private var note = ""
 
-    @State private var selectedPhoto: PhotosPickerItem?
-    @State private var isRecognizing = false
-    @State private var toast: String?
-    @State private var highlightedFields: Set<String> = []
-
-    private let ocrService = OCRService()
     private let categories = ["数码", "家电", "服饰", "家居", "运动", "美妆", "书籍", "其他"]
 
     var body: some View {
         NavigationStack {
             Form {
-                ocrSection
                 basicSection
                 categorySection
                 statusSection
@@ -47,43 +39,6 @@ struct AddItemView: View {
                         .disabled(name.isEmpty || priceText.isEmpty)
                 }
             }
-            .overlay(alignment: .bottom) {
-                if let toast {
-                    Text(toast)
-                        .font(.subheadline)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Capsule())
-                        .padding(.bottom, 32)
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
-                }
-            }
-            .animation(.easeInOut(duration: 0.25), value: toast)
-        }
-    }
-
-    private var ocrSection: some View {
-        Section {
-            PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                HStack {
-                    Image(systemName: "photo.on.rectangle.angled")
-                    Text("从截图识别导入")
-                    Spacer()
-                    if isRecognizing {
-                        ProgressView().scaleEffect(0.8)
-                    }
-                }
-                .foregroundStyle(Color(hex: "#FF6B6B"))
-            }
-            .onChange(of: selectedPhoto) { _, newItem in
-                guard let newItem else { return }
-                Task { await recognizePhoto(newItem) }
-            }
-        } header: {
-            Text("截图识别")
-        } footer: {
-            Text("选择电商截图，自动填充商品名和价格")
         }
     }
 
@@ -93,7 +48,6 @@ struct AddItemView: View {
                 Text("名称")
                 TextField("物品名称", text: $name)
                     .multilineTextAlignment(.trailing)
-                    .background(highlightedFields.contains("name") ? Color.yellow.opacity(0.25) : .clear)
             }
             HStack {
                 Text("价格")
@@ -102,7 +56,6 @@ struct AddItemView: View {
                     TextField("0.00", text: $priceText)
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
-                        .background(highlightedFields.contains("price") ? Color.yellow.opacity(0.25) : .clear)
                 }
             }
             DatePicker("购入日期", selection: $purchaseDate, in: ...Date(), displayedComponents: .date)
@@ -147,48 +100,6 @@ struct AddItemView: View {
         Section("备注") {
             TextField("选填", text: $note, axis: .vertical)
                 .lineLimit(3, reservesSpace: true)
-        }
-    }
-
-    private func recognizePhoto(_ item: PhotosPickerItem) async {
-        isRecognizing = true
-        defer { isRecognizing = false }
-
-        guard let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data) else {
-            showToast("图片加载失败，请重试")
-            return
-        }
-
-        let result = await ocrService.recognize(image: image)
-
-        withAnimation {
-            highlightedFields = []
-            if let detected = result.name, !detected.isEmpty {
-                name = detected
-                highlightedFields.insert("name")
-            }
-            if let detectedPrice = result.price {
-                priceText = String(format: "%.2f", detectedPrice)
-                highlightedFields.insert("price")
-            }
-        }
-
-        if result.name != nil || result.price != nil {
-            showToast("识别成功，请确认并修改")
-        } else {
-            showToast("未能识别，请手动输入")
-        }
-
-        try? await Task.sleep(for: .seconds(3))
-        withAnimation { highlightedFields = [] }
-    }
-
-    private func showToast(_ message: String) {
-        withAnimation { toast = message }
-        Task {
-            try? await Task.sleep(for: .seconds(2.5))
-            withAnimation { toast = nil }
         }
     }
 
