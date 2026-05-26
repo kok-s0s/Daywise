@@ -197,7 +197,7 @@ struct StatsView: View {
                 HStack(spacing: 12) {
                     Text("#\(i + 1)")
                         .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundStyle(i == 0 ? Color(hex: "#FF6B6B") : .tertiary)
+                        .foregroundStyle(i == 0 ? Color(hex: "#FF6B6B") : Color(.tertiaryLabel))
                         .frame(width: 28)
                     Text(item.name)
                         .font(.subheadline)
