@@ -1,7 +1,8 @@
 import SwiftUI
+import SwiftData
 
 struct SettingsView: View {
-    @State private var iCloudEnabled: Bool = NSUbiquitousKeyValueStore.default.synchronize()
+    @Query private var items: [Item]
 
     var body: some View {
         NavigationStack {
@@ -9,7 +10,7 @@ struct SettingsView: View {
                 Color(hex: "#F0F4FF").ignoresSafeArea()
 
                 List {
-                    iCloudSection
+                    dataSection
                     aboutSection
                 }
                 .listStyle(.insetGrouped)
@@ -20,38 +21,41 @@ struct SettingsView: View {
         }
     }
 
-    private var iCloudSection: some View {
+    // MARK: - Sections
+
+    private var dataSection: some View {
         Section {
-            HStack(spacing: 14) {
-                Image(systemName: "icloud.fill")
-                    .font(.title3)
-                    .foregroundStyle(Color(hex: "#2962FF"))
-                    .frame(width: 32)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("iCloud 同步")
+            ShareLink(
+                item: generateCSV(),
+                preview: SharePreview("daywise_export.csv", icon: Image(systemName: "tablecells"))
+            ) {
+                HStack(spacing: 14) {
+                    Image(systemName: "square.and.arrow.up")
                         .font(.subheadline)
-                    Text(iCloudSyncStatus)
-                        .font(.caption)
+                        .foregroundStyle(Color(hex: "#2962FF"))
+                        .frame(width: 28)
+                    Text("导出为 CSV")
+                    Spacer()
+                    Text("\(items.count) 条记录")
                         .foregroundStyle(.secondary)
+                        .font(.caption)
                 }
-                Spacer()
-                Image(systemName: iCloudEnabled ? "checkmark.circle.fill" : "xmark.circle.fill")
-                    .foregroundStyle(iCloudEnabled ? .green : Color(.systemGray3))
+                .foregroundStyle(.primary)
+                .padding(.vertical, 2)
             }
-            .padding(.vertical, 4)
         } header: {
-            Text("数据同步")
+            Text("数据")
         } footer: {
-            Text("iCloud 同步需要在设备设置中登录 Apple ID 并开启 iCloud。数据将在您的所有设备间自动同步。")
+            Text("将所有物品记录导出为 CSV 文件，可用 Numbers、Excel 等工具打开。")
                 .font(.caption)
         }
     }
 
     private var aboutSection: some View {
         Section("关于") {
-            aboutRow(icon: "app.badge.fill", label: "版本", value: appVersion, color: Color(hex: "#2962FF"))
-            aboutRow(icon: "hammer.fill", label: "开发者", value: "kok-s0s", color: .orange)
-            aboutRow(icon: "iphone", label: "平台", value: "iOS 17+", color: .green)
+            aboutRow(icon: "app.badge.fill",  label: "版本",  value: appVersion,  color: Color(hex: "#2962FF"))
+            aboutRow(icon: "hammer.fill",     label: "开发者", value: "kok-s0s",  color: .orange)
+            aboutRow(icon: "iphone",          label: "平台",  value: "iOS 17+",   color: .green)
         }
     }
 
@@ -63,15 +67,38 @@ struct SettingsView: View {
                 .frame(width: 28)
             Text(label)
             Spacer()
-            Text(value)
-                .foregroundStyle(.secondary)
+            Text(value).foregroundStyle(.secondary)
         }
         .padding(.vertical, 2)
     }
 
-    private var iCloudSyncStatus: String {
-        let status = FileManager.default.ubiquityIdentityToken
-        return status != nil ? "已连接 iCloud" : "未登录 iCloud"
+    // MARK: - CSV
+
+    private func generateCSV() -> String {
+        var lines = ["名称,价格,购入日期,分类,状态,出售价格,出售日期,日耗(元/天),服役天数,备注"]
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd"
+        for item in items {
+            let row: [String] = [
+                csv(item.name),
+                String(format: "%.2f", item.price),
+                df.string(from: item.purchaseDate),
+                csv(item.category),
+                item.displayStatus,
+                item.soldPrice.map { String(format: "%.2f", $0) } ?? "",
+                item.soldDate.map { df.string(from: $0) } ?? "",
+                String(format: "%.4f", item.dailyCost),
+                "\(item.daysInService)",
+                csv(item.note ?? "")
+            ]
+            lines.append(row.joined(separator: ","))
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private func csv(_ s: String) -> String {
+        guard s.contains(",") || s.contains("\"") || s.contains("\n") else { return s }
+        return "\"" + s.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
 
     private var appVersion: String {

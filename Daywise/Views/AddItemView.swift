@@ -4,6 +4,7 @@ import SwiftData
 struct AddItemView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(CategoryStore.self) private var categoryStore
 
     @State private var name = ""
     @State private var priceText = ""
@@ -14,7 +15,8 @@ struct AddItemView: View {
     @State private var soldDate = Date()
     @State private var note = ""
 
-    private let categories = ["数码", "家电", "服饰", "家居", "运动", "美妆", "书籍", "其他"]
+    @State private var showNewCategoryAlert = false
+    @State private var newCategoryName = ""
 
     var body: some View {
         NavigationStack {
@@ -38,6 +40,20 @@ struct AddItemView: View {
                         .fontWeight(.semibold)
                         .disabled(name.isEmpty || priceText.isEmpty)
                 }
+            }
+            .alert("新增分类", isPresented: $showNewCategoryAlert) {
+                TextField("分类名称", text: $newCategoryName)
+                Button("添加") {
+                    let trimmed = newCategoryName.trimmingCharacters(in: .whitespaces)
+                    if !trimmed.isEmpty {
+                        categoryStore.add(trimmed)
+                        category = trimmed
+                    }
+                    newCategoryName = ""
+                }
+                Button("取消", role: .cancel) { newCategoryName = "" }
+            } message: {
+                Text("输入新的分类名称")
             }
         }
     }
@@ -65,7 +81,13 @@ struct AddItemView: View {
     private var categorySection: some View {
         Section("分类") {
             Picker("分类", selection: $category) {
-                ForEach(categories, id: \.self) { Text($0).tag($0) }
+                ForEach(categoryStore.all, id: \.self) { Text($0).tag($0) }
+            }
+            Button {
+                showNewCategoryAlert = true
+            } label: {
+                Label("新增分类...", systemImage: "plus.circle")
+                    .foregroundStyle(Color(hex: "#2962FF"))
             }
         }
     }
@@ -117,6 +139,7 @@ struct AddItemView: View {
             note: note.isEmpty ? nil : note
         )
         modelContext.insert(item)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         dismiss()
     }
 }

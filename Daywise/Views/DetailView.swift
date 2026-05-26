@@ -41,6 +41,7 @@ struct DetailView: View {
         }
         .alert("删除物品", isPresented: $showingDeleteAlert) {
             Button("删除", role: .destructive) {
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
                 modelContext.delete(item)
                 dismiss()
             }

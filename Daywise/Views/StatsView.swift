@@ -53,7 +53,7 @@ struct StatsView: View {
                              icon: "archivebox.fill",
                              color: Color(hex: "#2962FF"))
                 overviewCard("总投入",
-                             value: String(format: "¥%.0f", totalSpend),
+                             value: CostCalculator.formatPrice(totalSpend),
                              icon: "creditcard.fill",
                              color: .blue)
                 overviewCard("平均日耗",
@@ -179,7 +179,7 @@ struct StatsView: View {
                 Text(name)
                     .font(.subheadline)
                 Spacer()
-                Text("\(count) 件  ¥\(Int(spend))")
+                Text("\(count) 件  \(CostCalculator.formatPrice(spend))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

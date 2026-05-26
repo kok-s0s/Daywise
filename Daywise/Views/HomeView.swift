@@ -13,7 +13,9 @@ struct HomeView: View {
     @Query(sort: \Item.createdAt, order: .reverse) private var items: [Item]
     @State private var showingAddItem = false
     @State private var selectedCategory: String? = nil
+    @State private var selectedStatus: ItemStatus? = nil
     @State private var sortOrder: ItemSortOrder = .newest
+    @State private var searchText = ""
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
@@ -22,9 +24,18 @@ struct HomeView: View {
     }
 
     private var displayItems: [Item] {
-        let base = selectedCategory == nil
-            ? Array(items)
-            : items.filter { $0.category == selectedCategory }
+        var base = selectedStatus == nil ? Array(items) : items.filter { $0.status == selectedStatus }
+        if let cat = selectedCategory {
+            base = base.filter { $0.category == cat }
+        }
+        if !searchText.isEmpty {
+            let q = searchText.lowercased()
+            base = base.filter {
+                $0.name.lowercased().contains(q) ||
+                $0.category.lowercased().contains(q) ||
+                ($0.note?.lowercased().contains(q) ?? false)
+            }
+        }
         switch sortOrder {
         case .newest:    return base.sorted { $0.createdAt > $1.createdAt }
         case .dailyDesc: return base.sorted { $0.dailyCost > $1.dailyCost }
@@ -43,6 +54,8 @@ struct HomeView: View {
                     Divider()
 
                     if !items.isEmpty {
+                        statusFilterBar
+                        Divider()
                         categoryFilterBar
                         Divider()
                     }
@@ -50,7 +63,7 @@ struct HomeView: View {
                     if items.isEmpty {
                         emptyState
                     } else if displayItems.isEmpty {
-                        categoryEmptyState
+                        filterEmptyState
                     } else {
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: 12) {
@@ -59,6 +72,29 @@ struct HomeView: View {
                                         ItemCard(item: item)
                                     }
                                     .buttonStyle(.plain)
+                                    .contextMenu {
+                                        if item.status == .serving {
+                                            Button {
+                                                item.status = .retired
+                                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                            } label: {
+                                                Label("标为已退役", systemImage: "archivebox")
+                                            }
+                                        } else if item.status == .retired {
+                                            Button {
+                                                item.status = .serving
+                                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                            } label: {
+                                                Label("标为服役中", systemImage: "checkmark.circle")
+                                            }
+                                        }
+                                        Button(role: .destructive) {
+                                            modelContext.delete(item)
+                                            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                                        } label: {
+                                            Label("删除", systemImage: "trash")
+                                        }
+                                    }
                                 }
                             }
                             .padding(16)
@@ -68,6 +104,7 @@ struct HomeView: View {
             }
             .navigationTitle("Daywise")
             .navigationBarTitleDisplayMode(.large)
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "搜索物品名称、分类、备注")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showingAddItem = true } label: {
@@ -107,11 +144,12 @@ struct HomeView: View {
         HStack(spacing: 0) {
             summaryCell("\(items.count)", label: "物品总数")
             Divider().frame(height: 36)
-            summaryCell(String(format: "¥%.0f", items.reduce(0) { $0 + $1.price }), label: "总投入")
+            summaryCell(CostCalculator.formatPrice(items.reduce(0) { $0 + $1.price }), label: "总投入")
             Divider().frame(height: 36)
             summaryCell({
-                let avg = items.isEmpty ? 0.0 : items.reduce(0.0) { $0 + $1.dailyCost } / Double(items.count)
-                return String(format: "¥%.2f", avg)
+                guard !items.isEmpty else { return "¥0.00/天" }
+                let avg = items.reduce(0.0) { $0 + $1.dailyCost } / Double(items.count)
+                return CostCalculator.formatDailyCost(avg)
             }(), label: "平均日耗")
         }
         .frame(maxWidth: .infinity)
@@ -122,8 +160,10 @@ struct HomeView: View {
     private func summaryCell(_ value: String, label: String) -> some View {
         VStack(spacing: 3) {
             Text(value)
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(Color(hex: "#2962FF"))
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -131,10 +171,28 @@ struct HomeView: View {
         .frame(maxWidth: .infinity)
     }
 
+    private var statusFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                FilterChip(title: "全部", isSelected: selectedStatus == nil) {
+                    selectedStatus = nil
+                }
+                ForEach(ItemStatus.allCases, id: \.self) { s in
+                    FilterChip(title: s.displayName, isSelected: selectedStatus == s) {
+                        selectedStatus = selectedStatus == s ? nil : s
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+        .background(.white)
+    }
+
     private var categoryFilterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                FilterChip(title: "全部", isSelected: selectedCategory == nil) {
+                FilterChip(title: "全部分类", isSelected: selectedCategory == nil) {
                     selectedCategory = nil
                 }
                 ForEach(availableCategories, id: \.self) { cat in
@@ -144,7 +202,7 @@ struct HomeView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
         }
         .background(.white)
     }
@@ -167,15 +225,18 @@ struct HomeView: View {
         .padding(.horizontal, 40)
     }
 
-    private var categoryEmptyState: some View {
+    private var filterEmptyState: some View {
         VStack(spacing: 12) {
             Spacer()
-            Image(systemName: "tray")
+            Image(systemName: "magnifyingglass")
                 .font(.system(size: 50))
                 .foregroundStyle(Color(hex: "#2962FF").opacity(0.35))
-            Text("该分类暂无物品")
+            Text("无匹配结果")
                 .font(.title3.bold())
                 .foregroundStyle(.secondary)
+            Text("换个筛选条件试试")
+                .font(.subheadline)
+                .foregroundStyle(.tertiary)
             Spacer()
         }
     }
