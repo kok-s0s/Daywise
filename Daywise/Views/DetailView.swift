@@ -11,7 +11,7 @@ struct DetailView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "#FFF0F0").ignoresSafeArea()
+            Color(hex: "#F0F4FF").ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 14) {
@@ -58,7 +58,7 @@ struct DetailView: View {
             }
             Text(CostCalculator.formatDailyCost(item.dailyCost))
                 .font(.system(size: 38, weight: .bold))
-                .foregroundStyle(Color(hex: "#FF6B6B"))
+                .foregroundStyle(Color(hex: "#2962FF"))
             Text(CostCalculator.formatDays(item.daysInService))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)

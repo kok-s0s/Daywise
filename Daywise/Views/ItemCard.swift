@@ -21,7 +21,7 @@ struct ItemCard: View {
 
             Text(CostCalculator.formatDailyCost(item.dailyCost))
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color(hex: "#FF6B6B"))
+                .foregroundStyle(Color(hex: "#2962FF"))
 
             Text(item.purchaseDate.formatted(.dateTime.year().month().day()))
                 .font(.system(size: 12))

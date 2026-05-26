@@ -7,7 +7,7 @@ struct StatsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(hex: "#FFF0F0").ignoresSafeArea()
+                Color(hex: "#F0F4FF").ignoresSafeArea()
 
                 if items.isEmpty {
                     emptyState
@@ -51,7 +51,7 @@ struct StatsView: View {
                 overviewCard("物品总数",
                              value: "\(items.count) 件",
                              icon: "archivebox.fill",
-                             color: Color(hex: "#FF6B6B"))
+                             color: Color(hex: "#2962FF"))
                 overviewCard("总投入",
                              value: String(format: "¥%.0f", totalSpend),
                              icon: "creditcard.fill",
@@ -184,7 +184,7 @@ struct StatsView: View {
                     .foregroundStyle(.secondary)
             }
             ProgressView(value: Double(count), total: Double(maxCount))
-                .tint(Color(hex: "#FF6B6B"))
+                .tint(Color(hex: "#2962FF"))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -197,7 +197,7 @@ struct StatsView: View {
                 HStack(spacing: 12) {
                     Text("#\(i + 1)")
                         .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundStyle(i == 0 ? Color(hex: "#FF6B6B") : Color(.tertiaryLabel))
+                        .foregroundStyle(i == 0 ? Color(hex: "#2962FF") : Color(.tertiaryLabel))
                         .frame(width: 28)
                     Text(item.name)
                         .font(.subheadline)
@@ -206,7 +206,7 @@ struct StatsView: View {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(CostCalculator.formatDailyCost(item.dailyCost))
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(colorHigh ? Color(hex: "#FF6B6B") : .green)
+                            .foregroundStyle(colorHigh ? Color(hex: "#2962FF") : .green)
                         Text(CostCalculator.formatDays(item.daysInService))
                             .font(.caption)
                             .foregroundStyle(.tertiary)
@@ -225,7 +225,7 @@ struct StatsView: View {
         VStack(spacing: 16) {
             Image(systemName: "chart.bar")
                 .font(.system(size: 60))
-                .foregroundStyle(Color(hex: "#FF6B6B").opacity(0.35))
+                .foregroundStyle(Color(hex: "#2962FF").opacity(0.35))
             Text("暂无统计数据")
                 .font(.title3.bold())
                 .foregroundStyle(.secondary)

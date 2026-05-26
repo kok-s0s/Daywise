@@ -36,7 +36,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(hex: "#FFF0F0").ignoresSafeArea()
+                Color(hex: "#F0F4FF").ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     summaryBar
@@ -72,7 +72,7 @@ struct HomeView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showingAddItem = true } label: {
                         Image(systemName: "plus.circle.fill")
-                            .foregroundStyle(Color(hex: "#FF6B6B"))
+                            .foregroundStyle(Color(hex: "#2962FF"))
                             .font(.title2)
                     }
                 }
@@ -123,7 +123,7 @@ struct HomeView: View {
         VStack(spacing: 3) {
             Text(value)
                 .font(.system(size: 20, weight: .bold))
-                .foregroundStyle(Color(hex: "#FF6B6B"))
+                .foregroundStyle(Color(hex: "#2962FF"))
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -154,7 +154,7 @@ struct HomeView: View {
             Spacer()
             Image(systemName: "shippingbox")
                 .font(.system(size: 60))
-                .foregroundStyle(Color(hex: "#FF6B6B").opacity(0.35))
+                .foregroundStyle(Color(hex: "#2962FF").opacity(0.35))
             Text("还没有物品")
                 .font(.title3.bold())
                 .foregroundStyle(.secondary)
@@ -172,7 +172,7 @@ struct HomeView: View {
             Spacer()
             Image(systemName: "tray")
                 .font(.system(size: 50))
-                .foregroundStyle(Color(hex: "#FF6B6B").opacity(0.35))
+                .foregroundStyle(Color(hex: "#2962FF").opacity(0.35))
             Text("该分类暂无物品")
                 .font(.title3.bold())
                 .foregroundStyle(.secondary)
@@ -195,7 +195,7 @@ struct FilterChip: View {
                 .foregroundStyle(isSelected ? .white : Color.primary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 6)
-                .background(isSelected ? Color(hex: "#FF6B6B") : Color(.systemGray6))
+                .background(isSelected ? Color(hex: "#2962FF") : Color(.systemGray6))
                 .clipShape(Capsule())
         }
         .buttonStyle(.plain)

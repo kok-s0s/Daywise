@@ -12,8 +12,12 @@ struct ContentView: View {
                 .tabItem {
                     Label("统计", systemImage: "chart.bar.fill")
                 }
+            SettingsView()
+                .tabItem {
+                    Label("设置", systemImage: "gear")
+                }
         }
-        .tint(Color(hex: "#FF6B6B"))
+        .tint(Color(hex: "#2962FF"))
     }
 }
 
