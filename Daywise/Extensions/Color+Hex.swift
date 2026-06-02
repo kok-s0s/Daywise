@@ -28,3 +28,15 @@ extension Color {
         )
     }
 }
+
+enum DaywiseTheme {
+    static let accent = Color(hex: "#00E5FF")
+    static let pageBackground = Color(hex: "#050506")
+    static let surface = Color(hex: "#101114")
+    static let elevatedSurface = Color(hex: "#15171C")
+    static let softSurface = Color(hex: "#1B1D22")
+    static let border = Color.white.opacity(0.10)
+    static let glow = Color(hex: "#00E5FF").opacity(0.28)
+    static let shadow = Color.black.opacity(0.34)
+    static let cardRadius: CGFloat = 8
+}

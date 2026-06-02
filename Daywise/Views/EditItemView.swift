@@ -58,7 +58,7 @@ struct EditItemView: View {
                         showNewCategoryAlert = true
                     } label: {
                         Label("新增分类...", systemImage: "plus.circle")
-                            .foregroundStyle(Color(hex: "#2962FF"))
+                            .foregroundStyle(DaywiseTheme.accent)
                     }
                 }
 
@@ -100,7 +100,7 @@ struct EditItemView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") { applyChanges() }
                         .fontWeight(.semibold)
-                        .disabled(name.isEmpty || priceText.isEmpty)
+                        .disabled(!canSave)
                 }
             }
             .alert("新增分类", isPresented: $showNewCategoryAlert) {
@@ -121,16 +121,27 @@ struct EditItemView: View {
     }
 
     private func applyChanges() {
-        guard let price = Double(priceText), price > 0 else { return }
-        item.name = name
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let price = Double(priceText), price > 0, !trimmedName.isEmpty else { return }
+        item.name = trimmedName
         item.price = price
         item.purchaseDate = purchaseDate
         item.category = category
         item.status = status
         item.soldPrice = status == .sold ? Double(soldPriceText) : nil
         item.soldDate = status == .sold ? soldDate : nil
-        item.note = note.isEmpty ? nil : note
+        item.note = trimmedNote.isEmpty ? nil : trimmedNote
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         dismiss()
+    }
+
+    private var canSave: Bool {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, let price = Double(priceText), price > 0 else { return false }
+        if status == .sold, let soldPrice = Double(soldPriceText) {
+            return soldPrice >= 0
+        }
+        return status != .sold || soldPriceText.isEmpty
     }
 }

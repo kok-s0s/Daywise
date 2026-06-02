@@ -7,7 +7,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(hex: "#F0F4FF").ignoresSafeArea()
+                DaywiseTheme.pageBackground.ignoresSafeArea()
 
                 List {
                     dataSection
@@ -32,7 +32,7 @@ struct SettingsView: View {
                 HStack(spacing: 14) {
                     Image(systemName: "square.and.arrow.up")
                         .font(.subheadline)
-                        .foregroundStyle(Color(hex: "#2962FF"))
+                        .foregroundStyle(DaywiseTheme.accent)
                         .frame(width: 28)
                     Text("导出为 CSV")
                     Spacer()
@@ -53,9 +53,9 @@ struct SettingsView: View {
 
     private var aboutSection: some View {
         Section("关于") {
-            aboutRow(icon: "app.badge.fill",  label: "版本",  value: appVersion,  color: Color(hex: "#2962FF"))
-            aboutRow(icon: "hammer.fill",     label: "开发者", value: "kok-s0s",  color: .orange)
-            aboutRow(icon: "iphone",          label: "平台",  value: "iOS 17+",   color: .green)
+            aboutRow(icon: "app.badge.fill",  label: "版本",  value: appVersion,  color: .primary)
+            aboutRow(icon: "hammer.fill",     label: "开发者", value: "kok-s0s",  color: .primary)
+            aboutRow(icon: "iphone",          label: "平台",  value: "iOS 17+",   color: .primary)
         }
     }
 

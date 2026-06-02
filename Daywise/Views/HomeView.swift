@@ -23,6 +23,23 @@ struct HomeView: View {
         Array(Set(items.map(\.category))).sorted()
     }
 
+    private var servingCount: Int {
+        items.filter { $0.status == .serving }.count
+    }
+
+    private var totalSpend: Double {
+        items.reduce(0) { $0 + $1.price }
+    }
+
+    private var avgDailyCost: Double {
+        guard !items.isEmpty else { return 0 }
+        return items.reduce(0.0) { $0 + $1.dailyCost } / Double(items.count)
+    }
+
+    private var hasActiveFilters: Bool {
+        selectedStatus != nil || selectedCategory != nil || !searchText.isEmpty
+    }
+
     private var displayItems: [Item] {
         var base = selectedStatus == nil ? Array(items) : items.filter { $0.status == selectedStatus }
         if let cat = selectedCategory {
@@ -47,58 +64,53 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(hex: "#F0F4FF").ignoresSafeArea()
+                DaywiseTheme.pageBackground.ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    summaryBar
-                    Divider()
+                if items.isEmpty {
+                    emptyState
+                } else {
+                    ScrollView {
+                        VStack(spacing: 14) {
+                            commandDeck
 
-                    if !items.isEmpty {
-                        statusFilterBar
-                        Divider()
-                        categoryFilterBar
-                        Divider()
-                    }
-
-                    if items.isEmpty {
-                        emptyState
-                    } else if displayItems.isEmpty {
-                        filterEmptyState
-                    } else {
-                        ScrollView {
-                            LazyVGrid(columns: columns, spacing: 12) {
-                                ForEach(displayItems) { item in
-                                    NavigationLink(destination: DetailView(item: item)) {
-                                        ItemCard(item: item)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .contextMenu {
-                                        if item.status == .serving {
-                                            Button {
-                                                item.status = .retired
-                                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                            } label: {
-                                                Label("标为已退役", systemImage: "archivebox")
-                                            }
-                                        } else if item.status == .retired {
-                                            Button {
-                                                item.status = .serving
-                                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                            } label: {
-                                                Label("标为服役中", systemImage: "checkmark.circle")
-                                            }
+                            if displayItems.isEmpty {
+                                filterEmptyState
+                                    .frame(minHeight: 360)
+                            } else {
+                                LazyVGrid(columns: columns, spacing: 12) {
+                                    ForEach(displayItems) { item in
+                                        NavigationLink(destination: DetailView(item: item)) {
+                                            ItemCard(item: item)
                                         }
-                                        Button(role: .destructive) {
-                                            modelContext.delete(item)
-                                            UINotificationFeedbackGenerator().notificationOccurred(.warning)
-                                        } label: {
-                                            Label("删除", systemImage: "trash")
+                                        .buttonStyle(.plain)
+                                        .contextMenu {
+                                            if item.status == .serving {
+                                                Button {
+                                                    item.status = .retired
+                                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                                } label: {
+                                                    Label("标为已退役", systemImage: "archivebox")
+                                                }
+                                            } else if item.status == .retired {
+                                                Button {
+                                                    item.status = .serving
+                                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                                } label: {
+                                                    Label("标为服役中", systemImage: "checkmark.circle")
+                                                }
+                                            }
+                                            Button(role: .destructive) {
+                                                modelContext.delete(item)
+                                                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                                            } label: {
+                                                Label("删除", systemImage: "trash")
+                                            }
                                         }
                                     }
                                 }
                             }
-                            .padding(16)
                         }
+                        .padding(16)
                     }
                 }
             }
@@ -109,26 +121,8 @@ struct HomeView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showingAddItem = true } label: {
                         Image(systemName: "plus.circle.fill")
-                            .foregroundStyle(Color(hex: "#2962FF"))
+                            .foregroundStyle(DaywiseTheme.accent)
                             .font(.title2)
-                    }
-                }
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Menu {
-                        ForEach(ItemSortOrder.allCases, id: \.self) { order in
-                            Button {
-                                sortOrder = order
-                            } label: {
-                                if sortOrder == order {
-                                    Label(order.rawValue, systemImage: "checkmark")
-                                } else {
-                                    Text(order.rawValue)
-                                }
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "arrow.up.arrow.down")
-                            .foregroundStyle(.primary)
                     }
                 }
             }
@@ -140,71 +134,168 @@ struct HomeView: View {
 
     // MARK: - Subviews
 
-    private var summaryBar: some View {
-        HStack(spacing: 0) {
-            summaryCell("\(items.count)", label: "物品总数")
-            Divider().frame(height: 36)
-            summaryCell(CostCalculator.formatPrice(items.reduce(0) { $0 + $1.price }), label: "总投入")
-            Divider().frame(height: 36)
-            summaryCell({
-                guard !items.isEmpty else { return "¥0.00/天" }
-                let avg = items.reduce(0.0) { $0 + $1.dailyCost } / Double(items.count)
-                return CostCalculator.formatDailyCost(avg)
-            }(), label: "平均日耗")
+    private var commandDeck: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("DAYWISE")
+                        .font(.system(size: 11, weight: .black, design: .monospaced))
+                        .foregroundStyle(DaywiseTheme.accent)
+                    Text(CostCalculator.formatDailyCost(avgDailyCost))
+                        .font(.system(size: 30, weight: .black, design: .rounded))
+                        .foregroundStyle(.primary)
+                        .minimumScaleFactor(0.68)
+                        .lineLimit(1)
+                    Text("平均日耗")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 10)
+                VStack(alignment: .trailing, spacing: 5) {
+                    Text("\(displayItems.count)")
+                        .font(.system(size: 34, weight: .black, design: .rounded))
+                        .foregroundStyle(DaywiseTheme.accent)
+                    Text(hasActiveFilters ? "命中记录" : "全部记录")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            HStack(spacing: 8) {
+                metricPill(title: "总投入", value: CostCalculator.formatPrice(totalSpend), icon: "creditcard")
+                metricPill(title: "服役中", value: "\(servingCount)", icon: "bolt")
+                metricPill(title: "总数", value: "\(items.count)", icon: "square.stack.3d.up")
+            }
+
+            HStack(spacing: 8) {
+                Menu {
+                    Button {
+                        selectedStatus = nil
+                    } label: {
+                        Label("全部状态", systemImage: selectedStatus == nil ? "checkmark" : "circle")
+                    }
+                    ForEach(ItemStatus.allCases, id: \.self) { status in
+                        Button {
+                            selectedStatus = status
+                        } label: {
+                            Label(status.displayName, systemImage: selectedStatus == status ? "checkmark" : "circle")
+                        }
+                    }
+                } label: {
+                    controlButton(title: selectedStatus?.displayName ?? "状态", icon: "switch.2")
+                }
+
+                Menu {
+                    Button {
+                        selectedCategory = nil
+                    } label: {
+                        Label("全部分类", systemImage: selectedCategory == nil ? "checkmark" : "circle")
+                    }
+                    ForEach(availableCategories, id: \.self) { category in
+                        Button {
+                            selectedCategory = category
+                        } label: {
+                            Label(category, systemImage: selectedCategory == category ? "checkmark" : "circle")
+                        }
+                    }
+                } label: {
+                    controlButton(title: selectedCategory ?? "分类", icon: "tag")
+                }
+
+                Menu {
+                    ForEach(ItemSortOrder.allCases, id: \.self) { order in
+                        Button {
+                            sortOrder = order
+                        } label: {
+                            Label(order.rawValue, systemImage: sortOrder == order ? "checkmark" : "circle")
+                        }
+                    }
+                } label: {
+                    controlButton(title: sortOrder.rawValue, icon: "arrow.up.arrow.down")
+                }
+
+                if hasActiveFilters {
+                    Button {
+                        selectedStatus = nil
+                        selectedCategory = nil
+                        searchText = ""
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .frame(width: 34, height: 34)
+                            .background(DaywiseTheme.softSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
+                                    .stroke(DaywiseTheme.border, lineWidth: 1)
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .background(.white)
+        .padding(16)
+        .background {
+            RoundedRectangle(cornerRadius: 18)
+                .fill(
+                    LinearGradient(
+                        colors: [DaywiseTheme.elevatedSurface, DaywiseTheme.surface],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(DaywiseTheme.border, lineWidth: 1)
+        }
+        .shadow(color: DaywiseTheme.glow, radius: 18, x: 0, y: 0)
+        .shadow(color: DaywiseTheme.shadow, radius: 16, x: 0, y: 12)
     }
 
-    private func summaryCell(_ value: String, label: String) -> some View {
-        VStack(spacing: 3) {
-            Text(value)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(Color(hex: "#2962FF"))
-                .minimumScaleFactor(0.7)
+    private func metricPill(title: String, value: String, icon: String) -> some View {
+        HStack(spacing: 7) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(DaywiseTheme.accent)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(value)
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Text(title)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(DaywiseTheme.softSurface)
+        .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+    }
+
+    private func controlButton(title: String, icon: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(DaywiseTheme.accent)
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
                 .lineLimit(1)
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .minimumScaleFactor(0.72)
         }
+        .foregroundStyle(.primary)
         .frame(maxWidth: .infinity)
-    }
-
-    private var statusFilterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                FilterChip(title: "全部", isSelected: selectedStatus == nil) {
-                    selectedStatus = nil
-                }
-                ForEach(ItemStatus.allCases, id: \.self) { s in
-                    FilterChip(title: s.displayName, isSelected: selectedStatus == s) {
-                        selectedStatus = selectedStatus == s ? nil : s
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+        .frame(height: 34)
+        .padding(.horizontal, 8)
+        .background(DaywiseTheme.softSurface)
+        .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
+                .stroke(DaywiseTheme.border, lineWidth: 1)
         }
-        .background(.white)
-    }
-
-    private var categoryFilterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                FilterChip(title: "全部分类", isSelected: selectedCategory == nil) {
-                    selectedCategory = nil
-                }
-                ForEach(availableCategories, id: \.self) { cat in
-                    FilterChip(title: cat, isSelected: selectedCategory == cat) {
-                        selectedCategory = selectedCategory == cat ? nil : cat
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-        }
-        .background(.white)
     }
 
     private var emptyState: some View {
@@ -212,7 +303,7 @@ struct HomeView: View {
             Spacer()
             Image(systemName: "shippingbox")
                 .font(.system(size: 60))
-                .foregroundStyle(Color(hex: "#2962FF").opacity(0.35))
+                .foregroundStyle(.tertiary)
             Text("还没有物品")
                 .font(.title3.bold())
                 .foregroundStyle(.secondary)
@@ -230,7 +321,7 @@ struct HomeView: View {
             Spacer()
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 50))
-                .foregroundStyle(Color(hex: "#2962FF").opacity(0.35))
+                .foregroundStyle(.tertiary)
             Text("无匹配结果")
                 .font(.title3.bold())
                 .foregroundStyle(.secondary)
@@ -239,27 +330,5 @@ struct HomeView: View {
                 .foregroundStyle(.tertiary)
             Spacer()
         }
-    }
-}
-
-// MARK: - FilterChip
-
-struct FilterChip: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                .foregroundStyle(isSelected ? .white : Color.primary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 6)
-                .background(isSelected ? Color(hex: "#2962FF") : Color(.systemGray6))
-                .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .animation(.easeInOut(duration: 0.15), value: isSelected)
     }
 }

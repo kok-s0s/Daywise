@@ -7,7 +7,7 @@ struct StatsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(hex: "#F0F4FF").ignoresSafeArea()
+                DaywiseTheme.pageBackground.ignoresSafeArea()
 
                 if items.isEmpty {
                     emptyState
@@ -51,19 +51,19 @@ struct StatsView: View {
                 overviewCard("物品总数",
                              value: "\(items.count) 件",
                              icon: "archivebox.fill",
-                             color: Color(hex: "#2962FF"))
+                             color: .primary)
                 overviewCard("总投入",
                              value: CostCalculator.formatPrice(totalSpend),
                              icon: "creditcard.fill",
-                             color: .blue)
+                             color: .primary)
                 overviewCard("平均日耗",
                              value: String(format: "¥%.2f/天", avgDailyCost),
                              icon: "chart.line.downtrend.xyaxis",
-                             color: .orange)
+                             color: .primary)
                 overviewCard("累计服役",
                              value: "\(totalDaysServed) 天",
                              icon: "calendar.badge.clock",
-                             color: .green)
+                             color: .primary)
             }
         }
     }
@@ -72,15 +72,19 @@ struct StatsView: View {
         VStack(alignment: .leading, spacing: 12) {
             sectionTitle("状态分布")
             VStack(spacing: 0) {
-                statusRow("服役中", count: servingItems.count, color: .green)
+                statusRow("服役中", count: servingItems.count, color: .primary)
                 Divider().padding(.leading, 16)
-                statusRow("已退役", count: retiredItems.count, color: .orange)
+                statusRow("已退役", count: retiredItems.count, color: .secondary)
                 Divider().padding(.leading, 16)
                 statusRow("已出售", count: soldItems.count, color: Color(.systemGray))
             }
-            .background(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+            .background(DaywiseTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+            .overlay {
+                RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
+                    .stroke(DaywiseTheme.border, lineWidth: 1)
+            }
+            .shadow(color: DaywiseTheme.shadow, radius: 3, x: 0, y: 1)
         }
     }
 
@@ -98,9 +102,13 @@ struct StatsView: View {
                     categoryRow(g.name, count: g.count, spend: g.spend, maxCount: maxCount)
                 }
             }
-            .background(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+            .background(DaywiseTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+            .overlay {
+                RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
+                    .stroke(DaywiseTheme.border, lineWidth: 1)
+            }
+            .shadow(color: DaywiseTheme.shadow, radius: 3, x: 0, y: 1)
         }
     }
 
@@ -151,9 +159,13 @@ struct StatsView: View {
             Spacer(minLength: 0)
         }
         .padding(14)
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+        .background(DaywiseTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
+                .stroke(DaywiseTheme.border, lineWidth: 1)
+        }
+        .shadow(color: DaywiseTheme.shadow, radius: 3, x: 0, y: 1)
     }
 
     private func statusRow(_ label: String, count: Int, color: Color) -> some View {
@@ -184,7 +196,7 @@ struct StatsView: View {
                     .foregroundStyle(.secondary)
             }
             ProgressView(value: Double(count), total: Double(maxCount))
-                .tint(Color(hex: "#2962FF"))
+                .tint(.primary)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -197,7 +209,7 @@ struct StatsView: View {
                 HStack(spacing: 12) {
                     Text("#\(i + 1)")
                         .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundStyle(i == 0 ? Color(hex: "#2962FF") : Color(.tertiaryLabel))
+                        .foregroundStyle(i == 0 ? Color.primary : Color(.tertiaryLabel))
                         .frame(width: 28)
                     Text(item.name)
                         .font(.subheadline)
@@ -206,7 +218,7 @@ struct StatsView: View {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(CostCalculator.formatDailyCost(item.dailyCost))
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(colorHigh ? Color(hex: "#2962FF") : .green)
+                            .foregroundStyle(colorHigh ? Color.primary : .secondary)
                         Text(CostCalculator.formatDays(item.daysInService))
                             .font(.caption)
                             .foregroundStyle(.tertiary)
@@ -216,16 +228,20 @@ struct StatsView: View {
                 .padding(.vertical, 12)
             }
         }
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+        .background(DaywiseTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
+                .stroke(DaywiseTheme.border, lineWidth: 1)
+        }
+        .shadow(color: DaywiseTheme.shadow, radius: 3, x: 0, y: 1)
     }
 
     private var emptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "chart.bar")
                 .font(.system(size: 60))
-                .foregroundStyle(Color(hex: "#2962FF").opacity(0.35))
+                .foregroundStyle(.tertiary)
             Text("暂无统计数据")
                 .font(.title3.bold())
                 .foregroundStyle(.secondary)

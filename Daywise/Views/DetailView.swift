@@ -11,7 +11,7 @@ struct DetailView: View {
 
     var body: some View {
         ZStack {
-            Color(hex: "#F0F4FF").ignoresSafeArea()
+            DaywiseTheme.pageBackground.ignoresSafeArea()
 
             ScrollView {
                 VStack(spacing: 14) {
@@ -59,16 +59,20 @@ struct DetailView: View {
             }
             Text(CostCalculator.formatDailyCost(item.dailyCost))
                 .font(.system(size: 38, weight: .bold))
-                .foregroundStyle(Color(hex: "#2962FF"))
+                .foregroundStyle(.primary)
             Text(CostCalculator.formatDays(item.daysInService))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
         .padding(20)
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+        .background(DaywiseTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
+                .stroke(DaywiseTheme.border, lineWidth: 1)
+        }
+        .shadow(color: DaywiseTheme.shadow, radius: 3, x: 0, y: 1)
     }
 
     private var infoCard: some View {
@@ -89,9 +93,13 @@ struct DetailView: View {
             Divider().padding(.leading, 16)
             infoRow("录入时间", item.createdAt.formatted(.dateTime.year().month().day()))
         }
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+        .background(DaywiseTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
+                .stroke(DaywiseTheme.border, lineWidth: 1)
+        }
+        .shadow(color: DaywiseTheme.shadow, radius: 3, x: 0, y: 1)
     }
 
     private func noteCard(note: String) -> some View {
@@ -104,9 +112,13 @@ struct DetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+        .background(DaywiseTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
+                .stroke(DaywiseTheme.border, lineWidth: 1)
+        }
+        .shadow(color: DaywiseTheme.shadow, radius: 3, x: 0, y: 1)
     }
 
     private var statusBadge: some View {
@@ -121,13 +133,13 @@ struct DetailView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
         .background(statusColor.opacity(0.12))
-        .clipShape(Capsule())
+        .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
     }
 
     private var statusColor: Color {
         switch item.status {
-        case .serving: return .green
-        case .retired: return .orange
+        case .serving: return .primary
+        case .retired: return .secondary
         case .sold: return Color(.systemGray)
         }
     }

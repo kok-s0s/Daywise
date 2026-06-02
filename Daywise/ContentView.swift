@@ -17,7 +17,8 @@ struct ContentView: View {
                     Label("设置", systemImage: "gear")
                 }
         }
-        .tint(Color(hex: "#2962FF"))
+        .tint(DaywiseTheme.accent)
+        .preferredColorScheme(.dark)
     }
 }
 

@@ -38,7 +38,7 @@ struct AddItemView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") { saveItem() }
                         .fontWeight(.semibold)
-                        .disabled(name.isEmpty || priceText.isEmpty)
+                        .disabled(!canSave)
                 }
             }
             .alert("新增分类", isPresented: $showNewCategoryAlert) {
@@ -87,7 +87,7 @@ struct AddItemView: View {
                 showNewCategoryAlert = true
             } label: {
                 Label("新增分类...", systemImage: "plus.circle")
-                    .foregroundStyle(Color(hex: "#2962FF"))
+                    .foregroundStyle(DaywiseTheme.accent)
             }
         }
     }
@@ -126,20 +126,31 @@ struct AddItemView: View {
     }
 
     private func saveItem() {
-        guard let price = Double(priceText), price > 0 else { return }
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let price = Double(priceText), price > 0, !trimmedName.isEmpty else { return }
         let soldPrice = status == .sold ? Double(soldPriceText) : nil
         let item = Item(
-            name: name,
+            name: trimmedName,
             price: price,
             purchaseDate: purchaseDate,
             category: category,
             status: status,
             soldPrice: soldPrice,
             soldDate: status == .sold ? soldDate : nil,
-            note: note.isEmpty ? nil : note
+            note: trimmedNote.isEmpty ? nil : trimmedNote
         )
         modelContext.insert(item)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         dismiss()
+    }
+
+    private var canSave: Bool {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, let price = Double(priceText), price > 0 else { return false }
+        if status == .sold, let soldPrice = Double(soldPriceText) {
+            return soldPrice >= 0
+        }
+        return status != .sold || soldPriceText.isEmpty
     }
 }
