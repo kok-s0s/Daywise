@@ -13,6 +13,8 @@ struct AddItemView: View {
     @State private var status = ItemStatus.serving
     @State private var soldPriceText = ""
     @State private var soldDate = Date()
+    @State private var useCountText = ""
+    @State private var satisfactionScore = 3
     @State private var note = ""
 
     @State private var showNewCategoryAlert = false
@@ -24,6 +26,7 @@ struct AddItemView: View {
                 basicSection
                 categorySection
                 statusSection
+                usageSection
                 if status == .sold {
                     soldSection
                 }
@@ -103,6 +106,22 @@ struct AddItemView: View {
         }
     }
 
+    private var usageSection: some View {
+        Section {
+            HStack {
+                Text("已使用次数")
+                TextField("0", text: $useCountText)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+            }
+            Stepper("满意度 \(satisfactionScore)/5", value: $satisfactionScore, in: 1...5)
+        } header: {
+            Text("使用情况")
+        } footer: {
+            Text("记录使用次数后，会计算单次使用成本和消费值不值。")
+        }
+    }
+
     private var soldSection: some View {
         Section("出售信息") {
             HStack {
@@ -130,6 +149,8 @@ struct AddItemView: View {
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let price = Double(priceText), price > 0, !trimmedName.isEmpty else { return }
         let soldPrice = status == .sold ? Double(soldPriceText) : nil
+        let trimmedUseCount = useCountText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let initialUseCount = Int(trimmedUseCount)
         let item = Item(
             name: trimmedName,
             price: price,
@@ -140,6 +161,9 @@ struct AddItemView: View {
             soldDate: status == .sold ? soldDate : nil,
             note: trimmedNote.isEmpty ? nil : trimmedNote
         )
+        item.useCount = initialUseCount.map { max(0, $0) }
+        item.lastUsedAt = (initialUseCount ?? 0) > 0 ? Date() : nil
+        item.satisfactionScore = satisfactionScore
         modelContext.insert(item)
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         dismiss()
@@ -148,6 +172,7 @@ struct AddItemView: View {
     private var canSave: Bool {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty, let price = Double(priceText), price > 0 else { return false }
+        if !useCountText.isEmpty, (Int(useCountText) ?? -1) < 0 { return false }
         if status == .sold, let soldPrice = Double(soldPriceText) {
             return soldPrice >= 0
         }

@@ -40,6 +40,18 @@ struct HomeView: View {
         selectedStatus != nil || selectedCategory != nil || !searchText.isEmpty
     }
 
+    private var idleItems: [Item] {
+        items.filter {
+            $0.status == .serving &&
+            $0.isUsageTracked &&
+            (($0.daysSinceLastUse ?? $0.daysInService) >= 30)
+        }
+    }
+
+    private var impulseItems: [Item] {
+        items.filter { $0.valueVerdict == .impulse }
+    }
+
     private var displayItems: [Item] {
         var base = selectedStatus == nil ? Array(items) : items.filter { $0.status == selectedStatus }
         if let cat = selectedCategory {
@@ -165,6 +177,23 @@ struct HomeView: View {
                 metricPill(title: "总投入", value: CostCalculator.formatPrice(totalSpend), icon: "creditcard")
                 metricPill(title: "服役中", value: "\(servingCount)", icon: "bolt")
                 metricPill(title: "总数", value: "\(items.count)", icon: "square.stack.3d.up")
+            }
+
+            if !idleItems.isEmpty || !impulseItems.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.caption.bold())
+                        .foregroundStyle(DaywiseTheme.accent)
+                    Text(insightText)
+                        .font(.caption.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 10)
+                .frame(height: 32)
+                .background(DaywiseTheme.softSurface)
+                .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
             }
 
             HStack(spacing: 8) {
@@ -296,6 +325,13 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
                 .stroke(DaywiseTheme.border, lineWidth: 1)
         }
+    }
+
+    private var insightText: String {
+        if let item = idleItems.first {
+            return "\(idleItems.count) 件可能闲置，先看「\(item.name)」"
+        }
+        return "\(impulseItems.count) 件像冲动消费，建议复盘"
     }
 
     private var emptyState: some View {

@@ -15,6 +15,7 @@ struct StatsView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 24) {
                             overviewSection
+                            reviewSection
                             statusSection
                             categorySection
                             rankingSection
@@ -40,6 +41,32 @@ struct StatsView: View {
     }
     private var totalDaysServed: Int {
         items.reduce(0) { $0 + $1.daysInService }
+    }
+    private var idleItems: [Item] {
+        items.filter {
+            $0.status == .serving &&
+            $0.isUsageTracked &&
+            (($0.daysSinceLastUse ?? $0.daysInService) >= 30)
+        }
+    }
+    private var impulseItems: [Item] {
+        items.filter { $0.valueVerdict == .impulse }
+    }
+    private var bestUseItem: Item? {
+        items.compactMap { item -> (Item, Double)? in
+            guard let cost = item.costPerUse else { return nil }
+            return (item, cost)
+        }
+        .sorted { $0.1 < $1.1 }
+        .first?.0
+    }
+    private var worstUseItem: Item? {
+        items.compactMap { item -> (Item, Double)? in
+            guard let cost = item.costPerUse else { return nil }
+            return (item, cost)
+        }
+        .sorted { $0.1 > $1.1 }
+        .first?.0
     }
 
     // MARK: - Sections
@@ -77,6 +104,36 @@ struct StatsView: View {
                 statusRow("已退役", count: retiredItems.count, color: .secondary)
                 Divider().padding(.leading, 16)
                 statusRow("已出售", count: soldItems.count, color: Color(.systemGray))
+            }
+            .background(DaywiseTheme.surface)
+            .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+            .overlay {
+                RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
+                    .stroke(DaywiseTheme.border, lineWidth: 1)
+            }
+            .shadow(color: DaywiseTheme.shadow, radius: 3, x: 0, y: 1)
+        }
+    }
+
+    private var reviewSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                sectionTitle("消费复盘")
+                Spacer()
+                ShareLink(item: reviewShareText) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(DaywiseTheme.accent)
+                }
+            }
+            VStack(spacing: 0) {
+                reviewRow("最超值", value: bestUseItem?.name ?? "暂无", detail: bestUseItem.map { CostCalculator.formatCostPerUse($0.costPerUse) } ?? "记录使用后生成")
+                Divider().padding(.leading, 16)
+                reviewRow("最该复盘", value: worstUseItem?.name ?? "暂无", detail: worstUseItem.map { CostCalculator.formatCostPerUse($0.costPerUse) } ?? "记录使用后生成")
+                Divider().padding(.leading, 16)
+                reviewRow("可能闲置", value: "\(idleItems.count) 件", detail: "已追踪且 30 天未使用")
+                Divider().padding(.leading, 16)
+                reviewRow("冲动消费", value: "\(impulseItems.count) 件", detail: "使用太少且成本偏高")
             }
             .background(DaywiseTheme.surface)
             .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
@@ -202,6 +259,25 @@ struct StatsView: View {
         .padding(.vertical, 12)
     }
 
+    private func reviewRow(_ label: String, value: String, detail: String) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(label)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            Spacer()
+            Text(value)
+                .font(.subheadline.bold())
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+
     private func rankCard(_ rankItems: [Item], colorHigh: Bool) -> some View {
         VStack(spacing: 0) {
             ForEach(Array(rankItems.enumerated()), id: \.element.id) { i, item in
@@ -249,5 +325,17 @@ struct StatsView: View {
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
         }
+    }
+
+    private var reviewShareText: String {
+        """
+        Daywise 消费复盘
+        总投入：\(CostCalculator.formatPrice(totalSpend))
+        平均日耗：\(CostCalculator.formatDailyCost(avgDailyCost))
+        最超值：\(bestUseItem?.name ?? "暂无")
+        最该复盘：\(worstUseItem?.name ?? "暂无")
+        可能闲置：\(idleItems.count) 件
+        冲动消费：\(impulseItems.count) 件
+        """
     }
 }

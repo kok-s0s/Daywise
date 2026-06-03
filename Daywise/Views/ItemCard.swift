@@ -20,6 +20,14 @@ struct ItemCard: View {
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+            Text(item.valueVerdict.rawValue)
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .foregroundStyle(.black)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(DaywiseTheme.accent)
+                .clipShape(RoundedRectangle(cornerRadius: 5))
+
             Spacer(minLength: 6)
 
             Text(CostCalculator.formatDays(item.daysInService))
@@ -35,6 +43,10 @@ struct ItemCard: View {
                     .font(.system(size: 12))
                     .foregroundStyle(.tertiary)
             }
+
+            Text(CostCalculator.formatCostPerUse(item.costPerUse))
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
 
             Text(item.purchaseDate.formatted(.dateTime.year().month().day()))
                 .font(.system(size: 12))

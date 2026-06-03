@@ -12,6 +12,8 @@ struct EditItemView: View {
     @State private var status: ItemStatus
     @State private var soldPriceText: String
     @State private var soldDate: Date
+    @State private var useCountText: String
+    @State private var satisfactionScore: Int
     @State private var note: String
 
     @State private var showNewCategoryAlert = false
@@ -26,6 +28,8 @@ struct EditItemView: View {
         _status = State(initialValue: item.status)
         _soldPriceText = State(initialValue: item.soldPrice.map { String(format: "%.2f", $0) } ?? "")
         _soldDate = State(initialValue: item.soldDate ?? Date())
+        _useCountText = State(initialValue: item.useCount.map { "\($0)" } ?? "")
+        _satisfactionScore = State(initialValue: item.satisfactionScore ?? 3)
         _note = State(initialValue: item.note ?? "")
     }
 
@@ -69,6 +73,16 @@ struct EditItemView: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                }
+
+                Section("使用情况") {
+                    HStack {
+                        Text("已使用次数")
+                        TextField("0", text: $useCountText)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    Stepper("满意度 \(satisfactionScore)/5", value: $satisfactionScore, in: 1...5)
                 }
 
                 if status == .sold {
@@ -131,6 +145,15 @@ struct EditItemView: View {
         item.status = status
         item.soldPrice = status == .sold ? Double(soldPriceText) : nil
         item.soldDate = status == .sold ? soldDate : nil
+        let trimmedUseCount = useCountText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let editedUseCount = Int(trimmedUseCount).map { max(0, $0) }
+        item.useCount = editedUseCount
+        if editedUseCount == nil || editedUseCount == 0 {
+            item.lastUsedAt = nil
+        } else if item.lastUsedAt == nil {
+            item.lastUsedAt = Date()
+        }
+        item.satisfactionScore = satisfactionScore
         item.note = trimmedNote.isEmpty ? nil : trimmedNote
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         dismiss()
@@ -139,6 +162,7 @@ struct EditItemView: View {
     private var canSave: Bool {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty, let price = Double(priceText), price > 0 else { return false }
+        if !useCountText.isEmpty, (Int(useCountText) ?? -1) < 0 { return false }
         if status == .sold, let soldPrice = Double(soldPriceText) {
             return soldPrice >= 0
         }

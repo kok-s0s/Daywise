@@ -12,6 +12,10 @@ struct ContentView: View {
                 .tabItem {
                     Label("统计", systemImage: "chart.bar.fill")
                 }
+            SimulatorView()
+                .tabItem {
+                    Label("模拟", systemImage: "target")
+                }
             SettingsView()
                 .tabItem {
                     Label("设置", systemImage: "gear")

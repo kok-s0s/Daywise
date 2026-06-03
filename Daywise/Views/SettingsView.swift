@@ -75,7 +75,7 @@ struct SettingsView: View {
     // MARK: - CSV
 
     private func generateCSV() -> String {
-        var lines = ["名称,价格,购入日期,分类,状态,出售价格,出售日期,日耗(元/天),服役天数,备注"]
+        var lines = ["名称,价格,购入日期,分类,状态,出售价格,出售日期,日耗(元/天),单次成本(元/次),使用次数,满意度,服役天数,备注"]
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd"
         for item in items {
@@ -88,6 +88,9 @@ struct SettingsView: View {
                 item.soldPrice.map { String(format: "%.2f", $0) } ?? "",
                 item.soldDate.map { df.string(from: $0) } ?? "",
                 String(format: "%.4f", item.dailyCost),
+                item.costPerUse.map { String(format: "%.4f", $0) } ?? "",
+                item.useCount.map(String.init) ?? "",
+                item.satisfactionScore.map(String.init) ?? "",
                 "\(item.daysInService)",
                 csv(item.note ?? "")
             ]

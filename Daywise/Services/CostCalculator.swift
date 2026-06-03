@@ -15,6 +15,12 @@ enum CostCalculator {
         "¥\(number(price, decimals: decimals))"
     }
 
+    static func formatCostPerUse(_ cost: Double?) -> String {
+        guard let cost else { return "未记录使用" }
+        if cost < 0.01 { return "< ¥0.01/次" }
+        return "¥\(number(cost, decimals: 2))/次"
+    }
+
     private static func number(_ value: Double, decimals: Int) -> String {
         let f = NumberFormatter()
         f.numberStyle = .decimal
