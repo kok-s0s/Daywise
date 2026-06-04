@@ -8,6 +8,8 @@ struct DetailView: View {
 
     @State private var showingEdit = false
     @State private var showingDeleteAlert = false
+    @State private var showingUseCountEditor = false
+    @State private var useCountInput = ""
 
     var body: some View {
         ZStack {
@@ -42,6 +44,16 @@ struct DetailView: View {
         }
         .sheet(isPresented: $showingEdit) {
             EditItemView(item: item)
+        }
+        .alert("设置使用次数", isPresented: $showingUseCountEditor) {
+            TextField("使用次数", text: $useCountInput)
+                .keyboardType(.numberPad)
+            Button("保存") {
+                applyUseCountInput()
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("直接输入累计使用次数。")
         }
         .alert("删除物品", isPresented: $showingDeleteAlert) {
             Button("删除", role: .destructive) {
@@ -127,7 +139,13 @@ struct DetailView: View {
             }
 
             HStack(spacing: 8) {
-                usageMetric("次数", useCountText, "number")
+                Button {
+                    useCountInput = item.useCount.map(String.init) ?? ""
+                    showingUseCountEditor = true
+                } label: {
+                    usageMetric("次数", useCountText, "number")
+                }
+                .buttonStyle(.plain)
                 usageMetric("最近", lastUsedText, "clock")
                 usageMetric("满意", "\(item.satisfactionScore ?? 3)/5", "star")
             }
@@ -269,5 +287,12 @@ struct DetailView: View {
 
     private var useCountText: String {
         item.isUsageTracked ? "\(item.effectiveUseCount)" : "未追踪"
+    }
+
+    private func applyUseCountInput() {
+        let trimmed = useCountInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let count = Int(trimmed) else { return }
+        item.setUseCount(count)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 }

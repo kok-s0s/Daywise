@@ -20,7 +20,20 @@ struct HomeView: View {
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
     private var availableCategories: [String] {
-        Array(Set(items.map(\.category))).sorted()
+        categoryCounts
+            .sorted {
+                if $0.value == $1.value { return $0.key < $1.key }
+                return $0.value > $1.value
+            }
+            .map(\.key)
+    }
+
+    private var categoryCounts: [String: Int] {
+        Dictionary(grouping: items, by: \.category).mapValues(\.count)
+    }
+
+    private var statusCounts: [ItemStatus: Int] {
+        Dictionary(grouping: items, by: \.status).mapValues(\.count)
     }
 
     private var servingCount: Int {
@@ -196,72 +209,7 @@ struct HomeView: View {
                 .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
             }
 
-            HStack(spacing: 8) {
-                Menu {
-                    Button {
-                        selectedStatus = nil
-                    } label: {
-                        Label("全部状态", systemImage: selectedStatus == nil ? "checkmark" : "circle")
-                    }
-                    ForEach(ItemStatus.allCases, id: \.self) { status in
-                        Button {
-                            selectedStatus = status
-                        } label: {
-                            Label(status.displayName, systemImage: selectedStatus == status ? "checkmark" : "circle")
-                        }
-                    }
-                } label: {
-                    controlButton(title: selectedStatus?.displayName ?? "状态", icon: "switch.2")
-                }
-
-                Menu {
-                    Button {
-                        selectedCategory = nil
-                    } label: {
-                        Label("全部分类", systemImage: selectedCategory == nil ? "checkmark" : "circle")
-                    }
-                    ForEach(availableCategories, id: \.self) { category in
-                        Button {
-                            selectedCategory = category
-                        } label: {
-                            Label(category, systemImage: selectedCategory == category ? "checkmark" : "circle")
-                        }
-                    }
-                } label: {
-                    controlButton(title: selectedCategory ?? "分类", icon: "tag")
-                }
-
-                Menu {
-                    ForEach(ItemSortOrder.allCases, id: \.self) { order in
-                        Button {
-                            sortOrder = order
-                        } label: {
-                            Label(order.rawValue, systemImage: sortOrder == order ? "checkmark" : "circle")
-                        }
-                    }
-                } label: {
-                    controlButton(title: sortOrder.rawValue, icon: "arrow.up.arrow.down")
-                }
-
-                if hasActiveFilters {
-                    Button {
-                        selectedStatus = nil
-                        selectedCategory = nil
-                        searchText = ""
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 12, weight: .bold))
-                            .frame(width: 34, height: 34)
-                            .background(DaywiseTheme.softSurface)
-                            .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
-                                    .stroke(DaywiseTheme.border, lineWidth: 1)
-                            }
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+            filterBar
         }
         .padding(16)
         .background {
@@ -305,20 +253,104 @@ struct HomeView: View {
         .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
     }
 
-    private func controlButton(title: String, icon: String) -> some View {
+    private var filterBar: some View {
+        HStack(spacing: 8) {
+            Menu {
+                Button {
+                    selectedStatus = nil
+                } label: {
+                    Label("全部状态 \(items.count)", systemImage: selectedStatus == nil ? "checkmark" : "circle")
+                }
+                ForEach(ItemStatus.allCases, id: \.self) { status in
+                    Button {
+                        selectedStatus = selectedStatus == status ? nil : status
+                    } label: {
+                        Label("\(status.displayName) \(statusCounts[status, default: 0])", systemImage: selectedStatus == status ? "checkmark" : "circle")
+                    }
+                }
+            } label: {
+                filterControl(title: selectedStatus?.displayName ?? "状态", icon: "switch.2", isActive: selectedStatus != nil)
+            }
+
+            Menu {
+                Button {
+                    selectedCategory = nil
+                } label: {
+                    Label("全部分类 \(items.count)", systemImage: selectedCategory == nil ? "checkmark" : "circle")
+                }
+                ForEach(availableCategories, id: \.self) { category in
+                    Button {
+                        selectedCategory = selectedCategory == category ? nil : category
+                    } label: {
+                        Label("\(category) \(categoryCounts[category, default: 0])", systemImage: selectedCategory == category ? "checkmark" : "circle")
+                    }
+                }
+            } label: {
+                filterControl(title: selectedCategory ?? "分类", icon: "tag", isActive: selectedCategory != nil)
+            }
+
+            Menu {
+                ForEach(ItemSortOrder.allCases, id: \.self) { order in
+                    Button {
+                        sortOrder = order
+                    } label: {
+                        Label(order.rawValue, systemImage: sortOrder == order ? "checkmark" : "circle")
+                    }
+                }
+            } label: {
+                filterControl(title: sortOrder.rawValue, icon: "arrow.up.arrow.down", isActive: sortOrder != .newest)
+            }
+
+            if hasActiveFilters {
+                Button {
+                    selectedStatus = nil
+                    selectedCategory = nil
+                    searchText = ""
+                } label: {
+                    clearFilterButton
+                }
+                .buttonStyle(.plain)
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
+        }
+        .animation(.easeInOut(duration: 0.16), value: hasActiveFilters)
+        .animation(.easeInOut(duration: 0.16), value: selectedStatus)
+        .animation(.easeInOut(duration: 0.16), value: selectedCategory)
+        .animation(.easeInOut(duration: 0.16), value: sortOrder)
+    }
+
+    private func filterControl(title: String, icon: String, isActive: Bool) -> some View {
         HStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(DaywiseTheme.accent)
+                .foregroundStyle(isActive ? .black : DaywiseTheme.accent)
             Text(title)
                 .font(.system(size: 12, weight: .semibold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
         }
-        .foregroundStyle(.primary)
+        .foregroundStyle(isActive ? .black : .primary)
         .frame(maxWidth: .infinity)
         .frame(height: 34)
         .padding(.horizontal, 8)
+        .background(isActive ? DaywiseTheme.accent : DaywiseTheme.softSurface)
+        .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius)
+                .stroke(isActive ? DaywiseTheme.accent.opacity(0.9) : DaywiseTheme.border, lineWidth: 1)
+        }
+    }
+
+    private var clearFilterButton: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "xmark")
+                .font(.system(size: 10, weight: .black))
+            Text("清除")
+                .font(.system(size: 12, weight: .semibold))
+        }
+        .foregroundStyle(.primary)
+        .frame(height: 34)
+        .padding(.horizontal, 10)
         .background(DaywiseTheme.softSurface)
         .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
         .overlay {
@@ -364,6 +396,22 @@ struct HomeView: View {
             Text("换个筛选条件试试")
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
+            if hasActiveFilters {
+                Button {
+                    selectedStatus = nil
+                    selectedCategory = nil
+                    searchText = ""
+                } label: {
+                    Label("清除筛选", systemImage: "xmark")
+                        .font(.subheadline.bold())
+                        .padding(.horizontal, 12)
+                        .frame(height: 34)
+                        .background(DaywiseTheme.softSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: DaywiseTheme.cardRadius))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 4)
+            }
             Spacer()
         }
     }

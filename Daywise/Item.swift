@@ -149,4 +149,10 @@ final class Item {
             lastUsedAt = nil
         }
     }
+
+    func setUseCount(_ count: Int) {
+        let normalized = max(0, count)
+        useCount = normalized
+        lastUsedAt = normalized > 0 ? (lastUsedAt ?? Date()) : nil
+    }
 }
