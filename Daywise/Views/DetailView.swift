@@ -170,14 +170,16 @@ struct DetailView: View {
 
     private var infoCard: some View {
         VStack(spacing: 0) {
-            infoRow("购入价格", String(format: "¥%.2f", item.price))
+            infoRow("购入价格", CostCalculator.formatPrice(item.price, decimals: 2))
             Divider().padding(.leading, 16)
             infoRow("购入日期", item.purchaseDate.formatted(.dateTime.year().month().day()))
             Divider().padding(.leading, 16)
             infoRow("分类", item.category)
             if let soldPrice = item.soldPrice {
                 Divider().padding(.leading, 16)
-                infoRow("出售价格", String(format: "¥%.2f", soldPrice))
+                infoRow("出售价格", CostCalculator.formatPrice(soldPrice, decimals: 2))
+                Divider().padding(.leading, 16)
+                infoRow("净成本", CostCalculator.formatPrice(item.netCost, decimals: 2))
             }
             if let soldDate = item.soldDate {
                 Divider().padding(.leading, 16)

@@ -41,7 +41,7 @@ struct HomeView: View {
     }
 
     private var totalSpend: Double {
-        items.reduce(0) { $0 + $1.price }
+        items.reduce(0) { $0 + $1.netCost }
     }
 
     private var avgDailyCost: Double {
@@ -110,6 +110,12 @@ struct HomeView: View {
                                         .buttonStyle(.plain)
                                         .contextMenu {
                                             if item.status == .serving {
+                                                Button {
+                                                    item.markUsed()
+                                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                                } label: {
+                                                    Label("今天用了", systemImage: "plus.circle")
+                                                }
                                                 Button {
                                                     item.status = .retired
                                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -187,7 +193,7 @@ struct HomeView: View {
             }
 
             HStack(spacing: 8) {
-                metricPill(title: "总投入", value: CostCalculator.formatPrice(totalSpend), icon: "creditcard")
+                metricPill(title: "净投入", value: CostCalculator.formatPrice(totalSpend), icon: "creditcard")
                 metricPill(title: "服役中", value: "\(servingCount)", icon: "bolt")
                 metricPill(title: "总数", value: "\(items.count)", icon: "square.stack.3d.up")
             }

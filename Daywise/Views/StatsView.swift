@@ -32,7 +32,7 @@ struct StatsView: View {
 
     // MARK: - Computed
 
-    private var totalSpend: Double       { items.reduce(0) { $0 + $1.price } }
+    private var totalSpend: Double       { items.reduce(0) { $0 + $1.netCost } }
     private var servingItems: [Item]     { items.filter { $0.status == .serving } }
     private var retiredItems: [Item]     { items.filter { $0.status == .retired } }
     private var soldItems: [Item]        { items.filter { $0.status == .sold } }
@@ -79,12 +79,12 @@ struct StatsView: View {
                              value: "\(items.count) 件",
                              icon: "archivebox.fill",
                              color: .primary)
-                overviewCard("总投入",
+                overviewCard("净投入",
                              value: CostCalculator.formatPrice(totalSpend),
                              icon: "creditcard.fill",
                              color: .primary)
                 overviewCard("平均日耗",
-                             value: String(format: "¥%.2f/天", avgDailyCost),
+                             value: CostCalculator.formatDailyCost(avgDailyCost),
                              icon: "chart.line.downtrend.xyaxis",
                              color: .primary)
                 overviewCard("累计服役",
@@ -147,7 +147,7 @@ struct StatsView: View {
 
     private var categorySection: some View {
         let groups = Dictionary(grouping: items, by: \.category)
-            .map { (name: $0.key, count: $0.value.count, spend: $0.value.reduce(0) { $0 + $1.price }) }
+            .map { (name: $0.key, count: $0.value.count, spend: $0.value.reduce(0) { $0 + $1.netCost }) }
             .sorted { $0.count > $1.count }
         let maxCount = groups.map(\.count).max() ?? 1
 
@@ -330,7 +330,7 @@ struct StatsView: View {
     private var reviewShareText: String {
         """
         Daywise 消费复盘
-        总投入：\(CostCalculator.formatPrice(totalSpend))
+        净投入：\(CostCalculator.formatPrice(totalSpend))
         平均日耗：\(CostCalculator.formatDailyCost(avgDailyCost))
         最超值：\(bestUseItem?.name ?? "暂无")
         最该复盘：\(worstUseItem?.name ?? "暂无")

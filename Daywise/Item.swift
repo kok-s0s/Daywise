@@ -88,11 +88,15 @@ final class Item {
         return max(1, days)
     }
 
-    var dailyCost: Double {
+    var netCost: Double {
         if status == .sold, let soldPrice {
-            return max(0, price - soldPrice) / Double(daysInService)
+            return max(0, price - soldPrice)
         }
-        return price / Double(daysInService)
+        return price
+    }
+
+    var dailyCost: Double {
+        netCost / Double(daysInService)
     }
 
     var displayStatus: String { status.displayName }
@@ -107,10 +111,7 @@ final class Item {
 
     var costPerUse: Double? {
         guard effectiveUseCount > 0 else { return nil }
-        if status == .sold, let soldPrice {
-            return max(0, price - soldPrice) / Double(effectiveUseCount)
-        }
-        return price / Double(effectiveUseCount)
+        return netCost / Double(effectiveUseCount)
     }
 
     var daysSinceLastUse: Int? {

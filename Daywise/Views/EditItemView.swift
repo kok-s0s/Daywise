@@ -131,19 +131,24 @@ struct EditItemView: View {
             } message: {
                 Text("输入新的分类名称")
             }
+            .onChange(of: purchaseDate) { _, newValue in
+                if soldDate < newValue {
+                    soldDate = newValue
+                }
+            }
         }
     }
 
     private func applyChanges() {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let price = Double(priceText), price > 0, !trimmedName.isEmpty else { return }
+        guard let price = CostCalculator.parseAmount(priceText), price > 0, !trimmedName.isEmpty else { return }
         item.name = trimmedName
         item.price = price
         item.purchaseDate = purchaseDate
         item.category = category
         item.status = status
-        item.soldPrice = status == .sold ? Double(soldPriceText) : nil
+        item.soldPrice = status == .sold ? CostCalculator.parseAmount(soldPriceText) : nil
         item.soldDate = status == .sold ? soldDate : nil
         let trimmedUseCount = useCountText.trimmingCharacters(in: .whitespacesAndNewlines)
         let editedUseCount = Int(trimmedUseCount).map { max(0, $0) }
@@ -161,11 +166,13 @@ struct EditItemView: View {
 
     private var canSave: Bool {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty, let price = Double(priceText), price > 0 else { return false }
-        if !useCountText.isEmpty, (Int(useCountText) ?? -1) < 0 { return false }
-        if status == .sold, let soldPrice = Double(soldPriceText) {
+        let trimmedUseCount = useCountText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, let price = CostCalculator.parseAmount(priceText), price > 0 else { return false }
+        if !trimmedUseCount.isEmpty, (Int(trimmedUseCount) ?? -1) < 0 { return false }
+        if status == .sold {
+            guard let soldPrice = CostCalculator.parseAmount(soldPriceText) else { return false }
             return soldPrice >= 0
         }
-        return status != .sold || soldPriceText.isEmpty
+        return true
     }
 }

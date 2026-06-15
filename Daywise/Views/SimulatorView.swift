@@ -6,7 +6,7 @@ struct SimulatorView: View {
     @State private var usesPerWeek = 3.0
 
     private var price: Double {
-        Double(priceText) ?? 0
+        CostCalculator.parseAmount(priceText) ?? 0
     }
 
     private var totalDays: Double {

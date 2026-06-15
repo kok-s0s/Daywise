@@ -147,8 +147,8 @@ struct AddItemView: View {
     private func saveItem() {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedNote = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let price = Double(priceText), price > 0, !trimmedName.isEmpty else { return }
-        let soldPrice = status == .sold ? Double(soldPriceText) : nil
+        guard let price = CostCalculator.parseAmount(priceText), price > 0, !trimmedName.isEmpty else { return }
+        let soldPrice = status == .sold ? CostCalculator.parseAmount(soldPriceText) : nil
         let trimmedUseCount = useCountText.trimmingCharacters(in: .whitespacesAndNewlines)
         let initialUseCount = Int(trimmedUseCount)
         let item = Item(
@@ -171,11 +171,13 @@ struct AddItemView: View {
 
     private var canSave: Bool {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty, let price = Double(priceText), price > 0 else { return false }
-        if !useCountText.isEmpty, (Int(useCountText) ?? -1) < 0 { return false }
-        if status == .sold, let soldPrice = Double(soldPriceText) {
+        let trimmedUseCount = useCountText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, let price = CostCalculator.parseAmount(priceText), price > 0 else { return false }
+        if !trimmedUseCount.isEmpty, (Int(trimmedUseCount) ?? -1) < 0 { return false }
+        if status == .sold {
+            guard let soldPrice = CostCalculator.parseAmount(soldPriceText) else { return false }
             return soldPrice >= 0
         }
-        return status != .sold || soldPriceText.isEmpty
+        return true
     }
 }
